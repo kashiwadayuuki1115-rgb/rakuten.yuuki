@@ -35,9 +35,9 @@ def rakuten_get(url: str, params: dict) -> dict:
     aff = os.getenv("RAKUTEN_AFFILIATE_ID")
     if aff:
         base["affiliateId"] = aff
-　　　   ref = os.environ["RAKUTEN_REFERER"].strip()
-    origin = "/".join(ref.split("/")[:3])
-    headers = {"Referer": ref, "Origin": origin}
+　　　ref = os.environ["RAKUTEN_REFERER"].strip()
+　　　origin = "/".join(ref.split("/")[:3])
+　　　headers = {"Referer": ref, "Origin": origin}
 
 
     for attempt in range(3):
