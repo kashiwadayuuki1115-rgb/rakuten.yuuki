@@ -1,7 +1,3 @@
-"""
-楽天ランキング取得 → 前日比較（急上昇の抽出）→ 価格差チェック → 記事下書き生成
-"""
-
 import json
 import os
 import re
@@ -23,22 +19,19 @@ DRAFT_DIR = ROOT / "drafts" / TODAY
 DRY_RUN = os.getenv("DRY_RUN") == "1"
 
 
-# ---------- 楽天API ----------
-
 def rakuten_get(url: str, params: dict) -> dict:
     base = {
-        "applicationId": os.environ["RAKUTEN_APP_ID"],
-        "accessKey": os.environ["RAKUTEN_ACCESS_KEY"],
+        "applicationId": os.environ["RAKUTEN_APP_ID"].strip(),
+        "accessKey": os.environ["RAKUTEN_ACCESS_KEY"].strip(),
         "format": "json",
         "formatVersion": 2,
     }
-    aff = os.getenv("RAKUTEN_AFFILIATE_ID")
+    aff = os.getenv("RAKUTEN_AFFILIATE_ID", "").strip()
     if aff:
         base["affiliateId"] = aff
-　　　ref = os.environ["RAKUTEN_REFERER"].strip()
-　　　origin = "/".join(ref.split("/")[:3])
-　　　headers = {"Referer": ref, "Origin": origin}
-
+    ref = os.environ["RAKUTEN_REFERER"].strip()
+    origin = "/".join(ref.split("/")[:3])
+    headers = {"Referer": ref, "Origin": origin}
 
     for attempt in range(3):
         r = requests.get(url, params={**base, **params}, headers=headers, timeout=20)
@@ -108,8 +101,6 @@ def price_spread(item: dict) -> dict | None:
     }
 
 
-# ---------- 前日比較 ----------
-
 def load_previous(genre_id: str) -> dict:
     files = sorted(DATA_DIR.glob(f"*_g{genre_id}.json"))
     files = [f for f in files if not f.name.startswith(TODAY)]
@@ -136,8 +127,6 @@ def find_rising(today: list, prev: dict) -> list:
                 rising.append(it)
     return sorted(rising, key=lambda x: -x["score"])
 
-
-# ---------- 下書き生成 ----------
 
 SYSTEM_PROMPT = """あなたは楽天アフィリエイト記事の編集者です。
 与えられた商品データだけを根拠に、記事の「下書き」を日本語で作ります。
@@ -176,7 +165,7 @@ def generate_draft(item: dict) -> str:
 
     r = requests.post(
         "https://api.openai.com/v1/chat/completions",
-        headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"},
+        headers={"Authorization": f"Bearer {os.environ['OPENAI_API_KEY'].strip()}"},
         json={
             "model": os.getenv("OPENAI_MODEL") or CONFIG["openai_model"],
             "messages": [
@@ -213,8 +202,6 @@ def write_draft(item: dict, genre_name: str, body: str, idx: int) -> Path:
     return path
 
 
-# ---------- メイン ----------
-
 def main():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     summary = [f"# {TODAY} 急上昇まとめ\n"]
@@ -245,30 +232,4 @@ def main():
             try:
                 it["price"] = price_spread(it)
             except Exception as e:
-                print(f"  価格差取得スキップ: {e}")
-                it["price"] = None
-            idx += 1
-            path = write_draft(it, gname, generate_draft(it), idx)
-            p = it["price"]
-            price_note = f" / 価格帯 {p['min']:,}〜{p['max']:,}円" if p else ""
-            summary.append(
-                f"- {it['trend']} {it['itemName'][:40]}… "
-                f"{it['itemPrice']:,}円 ★{it['reviewAverage']}（{it['reviewCount']}件）"
-                f"{price_note} → `{path.relative_to(ROOT)}`")
-        summary.append("")
-
-    DRAFT_DIR.mkdir(parents=True, exist_ok=True)
-    (DRAFT_DIR / "_summary.md").write_text("\n".join(summary), encoding="utf-8")
-
-    step_summary = os.getenv("GITHUB_STEP_SUMMARY")
-    if step_summary:
-        with open(step_summary, "a", encoding="utf-8") as f:
-            f.write("\n".join(summary))
-    print("\n".join(summary))
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except KeyError as e:
-        sys.exit(f"環境変数 {e} が未設定です（GitHub の Secrets を確認してください）")
+                print(f"  価格差取得スキップ:
