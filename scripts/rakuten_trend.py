@@ -232,4 +232,4 @@ def main():
             try:
                 it["price"] = price_spread(it)
             except Exception as e:
-                print(f"  価格差取得スキップ:
+                print("skip price", e)
