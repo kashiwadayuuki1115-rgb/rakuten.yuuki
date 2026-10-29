@@ -1,0 +1,15 @@
+{
+  "ranking_endpoint": "https://openapi.rakuten.co.jp/ichibaranking/api/IchibaItem/Ranking/20220601",
+  "search_endpoint": "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601",
+  "openai_model": "gpt-4o-mini",
+  "genres": [
+    { "id": "0", "name": "総合" },
+    { "id": "100939", "name": "美容・コスメ・香水" },
+    { "id": "558885", "name": "日用品雑貨" }
+  ],
+  "ranking_pages": 2,
+  "min_rank_up": 10,
+  "min_review_count": 5,
+  "drafts_per_genre": 2,
+  "request_interval_sec": 1.2
+}
