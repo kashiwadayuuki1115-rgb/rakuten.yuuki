@@ -233,3 +233,30 @@ def main():
                 it["price"] = price_spread(it)
             except Exception as e:
                 print("skip price", e)
+                it["price"] = None
+            idx += 1
+            path = write_draft(it, gname, generate_draft(it), idx)
+            p = it["price"]
+            price_note = f" / {p['min']}-{p['max']} yen" if p else ""
+            summary.append(
+                f"- {it['trend']} {it['itemName'][:40]} "
+                f"{it['itemPrice']} yen ({it['reviewCount']})"
+                f"{price_note} -> {path.relative_to(ROOT)}")
+        summary.append("")
+
+    DRAFT_DIR.mkdir(parents=True, exist_ok=True)
+    (DRAFT_DIR / "_summary.md").write_text("\n".join(summary), encoding="utf-8")
+
+    step_summary = os.getenv("GITHUB_STEP_SUMMARY")
+    if step_summary:
+        with open(step_summary, "a", encoding="utf-8") as f:
+            f.write("\n".join(summary))
+    print("\n".join(summary))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyError as e:
+        sys.exit(f"missing env: {e}")
+
